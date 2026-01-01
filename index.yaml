@@ -3,6 +3,16 @@ entries:
   ib-gateway:
   - apiVersion: v2
     appVersion: latest
+    created: "2026-01-01T23:33:32.087204235Z"
+    description: Interactive Brokers Gateway for automated trading via TWS API
+    digest: 91f30e9238bf28b9826e751def685148ece21dc29b77abf92ca4af57e0b54ce7
+    name: ib-gateway
+    type: application
+    urls:
+    - https://github.com/erlahq/erla-helm-charts/releases/download/ib-gateway-0.1.2/ib-gateway-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: latest
     created: "2026-01-01T22:13:56.651493002Z"
     description: Interactive Brokers Gateway for automated trading via TWS API
     digest: cb786edf5a8094818b6f20c888213b71e0abd44f88be4bb557e0acb7b506c611
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://github.com/erlahq/erla-helm-charts/releases/download/ib-gateway-0.1.1/ib-gateway-0.1.1.tgz
     version: 0.1.1
-generated: "2026-01-01T22:13:56.651505214Z"
+generated: "2026-01-01T23:33:32.087213161Z"
