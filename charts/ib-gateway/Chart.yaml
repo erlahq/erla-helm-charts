@@ -4,7 +4,7 @@ description: Interactive Brokers Gateway for automated trading via TWS API
 
 type: application
 
-version: 0.1.0
+version: 0.1.1
 
 # IB Gateway version (using gnzsnz/ib-gateway-docker)
 appVersion: "latest"
