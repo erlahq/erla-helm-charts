@@ -36,6 +36,25 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.ibgateway.useCustomConfig }}
+      initContainers:
+        - name: setup-custom-config
+          image: busybox:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Copying custom jts.ini configuration..."
+              mkdir -p /root/Jts
+              cp /config/jts.ini /root/Jts/jts.ini
+              chmod 644 /root/Jts/jts.ini
+              echo "Custom configuration copied successfully"
+              cat /root/Jts/jts.ini
+          volumeMounts:
+            - name: jts-data
+              mountPath: /root/Jts
+            - name: custom-config
+              mountPath: /config
+      {{- end }}
       containers:
         - name: ib-gateway
           {{- with .Values.securityContext }}
@@ -74,6 +93,12 @@ spec:
               value: {{ .Values.ibgateway.twsSettingsPath | quote }}
             - name: JAVA_HEAP_SIZE
               value: {{ .Values.ibgateway.javaHeapSize | quote }}
+            {{- if .Values.ibgateway.useCustomConfig }}
+            - name: CUSTOM_CONFIG
+              value: "yes"
+            {{- end }}
+            - name: TIME_ZONE
+              value: {{ .Values.ibgateway.timeZone | quote }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -89,10 +114,21 @@ spec:
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
+            {{- with $.Values.additionalVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
+        {{- if $.Values.ibgateway.useCustomConfig }}
+        - name: custom-config
+          configMap:
+            name: {{ include "helm.fullname" $ }}-jts-config
+        {{- end }}
+        {{- with $.Values.additionalVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

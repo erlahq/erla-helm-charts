@@ -24,6 +24,10 @@ ibgateway:
   twsSettingsPath: "/root/Jts"
   # JVM heap size for TWS (default: 768MB, recommended: 2048MB for stability)
   javaHeapSize: 2048
+  # Time zone for TWS (default: UTC, alternative: America/New_York for US markets)
+  timeZone: "UTC"
+  # Use custom jts.ini configuration to ensure ndc1.ibllc.com server (default: true)
+  useCustomConfig: true
 
 # IBKR credentials - reference to Kubernetes secret
 credentials:
@@ -100,6 +104,10 @@ volumes:
 volumeMounts:
   - name: jts-data
     mountPath: /root/Jts
+
+# Additional volumes for custom config (added automatically when useCustomConfig is true)
+additionalVolumes: []
+additionalVolumeMounts: []
 
 # Node scheduling - run on trading nodes (same as equity-momentum for co-location)
 nodeSelector: {}

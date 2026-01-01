@@ -10,6 +10,8 @@ This Helm chart deploys the Interactive Brokers Gateway, enabling automated trad
 
 - Automated deployment of IB Gateway with TWS API access
 - Support for both paper and live trading modes
+- Pre-configured to use `ndc1.ibllc.com` server for optimal connectivity
+- Custom `jts.ini` configuration management via ConfigMap
 - VNC access for two-factor authentication (2FA) handling
 - Health checks and liveness probes for reliability
 - Configurable resource limits for production workloads
@@ -72,6 +74,8 @@ helm install ib-gateway ./charts/ib-gateway \
 | `ibgateway.twsPort` | TWS API port (4001 for live, 4002 for paper) | `4002`                      |
 | `ibgateway.vncPassword` | VNC password for remote access | `changeme`                  |
 | `ibgateway.javaHeapSize` | JVM heap size in MB | `2048`                      |
+| `ibgateway.timeZone` | Time zone for IB Gateway (e.g., `UTC`, `America/New_York`) | `UTC`                       |
+| `ibgateway.useCustomConfig` | Use custom `jts.ini` configuration (ensures `ndc1.ibllc.com` server) | `true`                      |
 | `credentials.secretName` | Name of Kubernetes secret with IBKR credentials | `ibkr-credentials`          |
 | `image.repository` | IB Gateway Docker image | `ghcr.io/gnzsnz/ib-gateway` |
 | `image.tag` | Image tag | `latest`                    |
@@ -125,6 +129,60 @@ Install with custom values:
 ```bash
 helm install ib-gateway erla/ib-gateway -f values.yaml
 ```
+
+### Server Configuration
+
+By default, this chart uses a custom `jts.ini` configuration (via `ibgateway.useCustomConfig=true`) that ensures IB Gateway connects to the `ndc1.ibllc.com` server. This provides:
+
+- **Consistent server routing**: All connections (order routing, SSL, peer communication) use `ndc1.ibllc.com`
+- **Predictable connectivity**: No automatic server selection that might vary between deployments
+- **Region stability**: Configured for `Region=usr` (US region)
+
+The custom configuration is managed via a ConfigMap that is copied to `/root/Jts/jts.ini` before IB Gateway starts.
+
+#### Server Settings
+
+The following server settings are pre-configured:
+
+```ini
+[IBGateway]
+RemoteHostOrderRouting=ndc1.ibllc.com
+RemotePortOrderRouting=4001
+
+[Logon]
+SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
+
+[Communication]
+Peer=ndc1.ibllc.com:4001
+Region=usr
+```
+
+#### Verifying Server Configuration
+
+To verify the server configuration in a running pod:
+
+```bash
+# Check which server is configured
+kubectl exec -it <pod-name> -- cat /root/Jts/jts.ini | grep -E 'RemoteHost|SupportsSSL|Peer='
+```
+
+Expected output:
+```
+RemoteHostOrderRouting=ndc1.ibllc.com
+SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
+Peer=ndc1.ibllc.com:4001
+```
+
+#### Disabling Custom Configuration
+
+If you need to use the default server selection (not recommended for production):
+
+```yaml
+ibgateway:
+  useCustomConfig: false
+```
+
+When disabled, the IB Gateway will use its default server selection mechanism, which may result in connections to different IB servers (e.g., `cdc1.ibllc.com`).
 
 ## Usage
 
@@ -235,6 +293,27 @@ kubectl describe pod -l app.kubernetes.io/name=ib-gateway
 ```
 
 The liveness probe waits 120 seconds for IB Gateway to fully start. Increase `livenessProbe.initialDelaySeconds` if needed.
+
+### Verifying Server Configuration
+
+**Check if IB Gateway is using the correct server (`ndc1.ibllc.com`):**
+
+```bash
+# Get pod name
+POD_NAME=$(kubectl get pod -l app.kubernetes.io/name=ib-gateway -o jsonpath='{.items[0].metadata.name}')
+
+# Verify server configuration
+kubectl exec $POD_NAME -- sh -c "cat /root/Jts/jts.ini | grep -E 'RemoteHost|SupportsSSL|Peer='"
+```
+
+Expected output should show `ndc1.ibllc.com` for all server settings:
+```
+RemoteHostOrderRouting=ndc1.ibllc.com
+SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
+Peer=ndc1.ibllc.com:4001
+```
+
+If you see `cdc1.ibllc.com` or other servers, ensure `ibgateway.useCustomConfig=true` in your values and redeploy.
 
 ## Architecture
 

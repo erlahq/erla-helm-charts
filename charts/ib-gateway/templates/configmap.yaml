@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" . }}-jts-config
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+data:
+  jts.ini: |
+    [IBGateway]
+    WriteDebug=false
+    TrustedIPs=127.0.0.1
+    RemoteHostOrderRouting=ndc1.ibllc.com
+    RemotePortOrderRouting={{ .Values.ibgateway.tradingMode | eq "live" | ternary "4001" "4001" }}
+    ApiOnly=true
+    LocalServerPort=4000
+
+    [Logon]
+    useRemoteSettings=false
+    TimeZone={{ .Values.ibgateway.timeZone | default "UTC" }}
+    tradingMode={{ .Values.ibgateway.tradingMode | eq "live" | ternary "l" "p" }}
+    colorPalletName=dark
+    Steps=6
+    Locale=en
+    SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
+    UseSSL=true
+    s3store=true
+    displayedproxymsg=1
+    ibkrBranding=pro
+
+    [Communication]
+    Peer=ndc1.ibllc.com:{{ .Values.ibgateway.tradingMode | eq "live" | ternary "4001" "4001" }}
+    Region=usr
