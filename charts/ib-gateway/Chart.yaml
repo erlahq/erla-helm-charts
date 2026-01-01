@@ -1,0 +1,10 @@
+apiVersion: v2
+name: ib-gateway
+description: Interactive Brokers Gateway for automated trading via TWS API
+
+type: application
+
+version: 0.1.0
+
+# IB Gateway version (using gnzsnz/ib-gateway-docker)
+appVersion: "latest"

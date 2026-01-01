@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.fullname" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.ibgateway.twsPort }}
+      targetPort: tws-api
+      protocol: TCP
+      name: {{ .Values.service.ports.twsApi.name }}
+    - port: {{ .Values.service.ports.vnc.port }}
+      targetPort: vnc
+      protocol: TCP
+      name: {{ .Values.service.ports.vnc.name }}
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}

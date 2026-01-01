@@ -1,0 +1,27 @@
+IB Gateway has been deployed successfully!
+
+1. Check the pod status:
+   kubectl get pods -l app.kubernetes.io/name={{ include "helm.name" . }} -n {{ .Release.Namespace }}
+
+2. View logs:
+   kubectl logs -l app.kubernetes.io/name={{ include "helm.name" . }} -n {{ .Release.Namespace }} -f
+
+3. Access VNC for 2FA authentication:
+   kubectl port-forward -n {{ .Release.Namespace }} service/{{ include "helm.fullname" . }} 5900:5900
+
+   Then connect with a VNC client:
+   - macOS: open vnc://localhost:5900
+   - Linux: vncviewer localhost:5900
+   - Password: {{ .Values.ibgateway.vncPassword }}
+
+4. Your trading application can connect to the TWS API:
+   - Service: {{ include "helm.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+   - Port: {{ .Values.ibgateway.twsPort }}
+   - Trading Mode: {{ .Values.ibgateway.tradingMode }}
+
+{{- if eq .Values.ibgateway.tradingMode "live" }}
+
+⚠️  WARNING: Running in LIVE trading mode! Real money is at risk.
+{{- end }}
+
+For more information, visit: https://github.com/erlahq/erla-helm-charts

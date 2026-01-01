@@ -1,0 +1,127 @@
+# IB Gateway Helm Chart Values
+# Based on https://github.com/gnzsnz/ib-gateway-docker
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/gnzsnz/ib-gateway
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "ib-gateway"
+
+# IB Gateway configuration
+ibgateway:
+  # Trading mode: "paper" or "live"
+  tradingMode: "paper"
+  # TWS port (4001 for live, 4002 for paper)
+  twsPort: 4002
+  # VNC password for remote access (2FA)
+  vncPassword: "changeme"
+  # Path for TWS settings
+  twsSettingsPath: "/root/Jts"
+  # JVM heap size for TWS (default: 768MB, recommended: 2048MB for stability)
+  javaHeapSize: 2048
+
+# IBKR credentials - reference to Kubernetes secret
+credentials:
+  # Name of the secret containing IBKR username and password
+  secretName: "ibkr-credentials"
+  # Secret should have keys: username, password
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels:
+  app: ib-gateway
+  component: gateway
+
+podSecurityContext:
+  fsGroup: 0
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    # TWS API port (for trading application)
+    twsApi:
+      port: 4002  # Will be overridden based on tradingMode
+      name: tws-api
+    # VNC port (for 2FA and monitoring)
+    vnc:
+      port: 5900
+      name: vnc
+
+ingress:
+  enabled: false
+
+resources:
+  # Optimized for c7a.4xlarge (16 vCPU, 32GB RAM) - TWS gateway needs stable resources for API reliability
+  requests:
+    cpu: 3000m        # Guarantee 18.75% of node (3 of 16 vCPUs) for stable TWS API gateway + VNC
+    memory: 4Gi       # TWS Java process (2GB heap) + 2GB overhead for stable API operation
+  limits:
+    cpu: 4000m        # Can burst to 25% of node for TWS connection spikes and market data processing
+    memory: 6Gi       # Hard limit: 2GB heap + 4GB max overhead (prevents memory leaks from affecting other pods)
+
+# Health checks for IB Gateway
+livenessProbe:
+  tcpSocket:
+    port: tws-api
+  initialDelaySeconds: 120
+  periodSeconds: 30
+
+readinessProbe:
+  tcpSocket:
+    port: tws-api
+  initialDelaySeconds: 60
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+
+volumes:
+  - name: jts-data
+    emptyDir: {}
+    # For persistence, replace emptyDir with:
+    # persistentVolumeClaim:
+    #   claimName: ib-gateway-jts-pvc
+
+volumeMounts:
+  - name: jts-data
+    mountPath: /root/Jts
+
+# Node scheduling - run on trading nodes (same as equity-momentum for co-location)
+nodeSelector: {}
+
+# Tolerate trading node taint
+tolerations:
+  - key: trading
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+
+# Schedule on trading nodes in NYC local zone for low latency to IBKR
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: workload
+              operator: In
+              values:
+                - trading
+
+# Deployment strategy - don't run multiple instances
+strategy:
+  type: Recreate
