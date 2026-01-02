@@ -9,8 +9,8 @@ data:
     [IBGateway]
     WriteDebug=false
     TrustedIPs=127.0.0.1
-    RemoteHostOrderRouting=ndc1.ibllc.com
-    RemotePortOrderRouting={{ .Values.ibgateway.tradingMode | eq "live" | ternary "4001" "4001" }}
+    RemoteHostOrderRouting={{ .Values.ibgateway.tradingMode | eq "live" | ternary "ndc1.ibllc.com" "cdc1.ibllc.com" }}
+    RemotePortOrderRouting=4001
     ApiOnly=true
     LocalServerPort=4000
 
@@ -21,12 +21,12 @@ data:
     colorPalletName=dark
     Steps=6
     Locale=en
-    SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
+    SupportsSSL={{ .Values.ibgateway.tradingMode | eq "live" | ternary "ndc1.ibllc.com:4000,true,20260101,false" "cdc1.ibllc.com:4000,true,20260101,false" }}
     UseSSL=true
     s3store=true
     displayedproxymsg=1
     ibkrBranding=pro
 
     [Communication]
-    Peer=ndc1.ibllc.com:{{ .Values.ibgateway.tradingMode | eq "live" | ternary "4001" "4001" }}
+    Peer={{ .Values.ibgateway.tradingMode | eq "live" | ternary "ndc1.ibllc.com:4001" "cdc1.ibllc.com:4001" }}
     Region=usr

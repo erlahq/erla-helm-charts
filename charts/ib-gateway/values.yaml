@@ -24,9 +24,9 @@ ibgateway:
   twsSettingsPath: "/root/Jts"
   # JVM heap size for TWS (default: 768MB, recommended: 2048MB for stability)
   javaHeapSize: 2048
-  # Time zone for TWS (default: UTC, alternative: America/New_York for US markets)
+  # Time zone for TWS (default: UTC -> Africa/Abidjan aka Greenwich Mean Time (GMT) or UTC+0, it does not observe DST.)
   timeZone: "UTC"
-  # Use custom jts.ini configuration to ensure ndc1.ibllc.com server (default: true)
+  # Use custom jts.ini configuration to ensure ndc1.ibllc.com server (NYC datacenter for low latency)
   useCustomConfig: true
 
 # IBKR credentials - reference to Kubernetes secret
@@ -130,6 +130,6 @@ affinity:
               values:
                 - trading
 
-# Deployment strategy - don't run multiple instances
+# Deployment strategy - Recreate ensures only one instance runs (IB limits concurrent connections)
 strategy:
   type: Recreate

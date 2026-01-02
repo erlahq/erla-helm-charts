@@ -10,7 +10,7 @@ This Helm chart deploys the Interactive Brokers Gateway, enabling automated trad
 
 - Automated deployment of IB Gateway with TWS API access
 - Support for both paper and live trading modes
-- Pre-configured to use `ndc1.ibllc.com` server for optimal connectivity
+- Pre-configured to use `ndc1.ibllc.com` server for optimal connectivity, and `cdc1.ibllc.com` for paper (required by IBKR)
 - Custom `jts.ini` configuration management via ConfigMap
 - VNC access for two-factor authentication (2FA) handling
 - Health checks and liveness probes for reliability
@@ -46,12 +46,14 @@ helm repo update
 # Install for paper trading
 helm install ib-gateway erla/ib-gateway \
   --set credentials.secretName=ibkr-credentials \
-  --set ibgateway.tradingMode=paper
+  --set ibgateway.tradingMode=paper \
+  --set ibgateway.twsPort=4002
 
 # Install for live trading
 helm install ib-gateway erla/ib-gateway \
   --set credentials.secretName=ibkr-credentials \
-  --set ibgateway.tradingMode=live
+  --set ibgateway.tradingMode=live \
+  --set ibgateway.twsPort=4001
 ```
 
 ### Install from Source
@@ -60,8 +62,17 @@ helm install ib-gateway erla/ib-gateway \
 git clone https://github.com/erlahq/erla-helm-charts.git
 cd erla-helm-charts
 
-helm install ib-gateway ./charts/ib-gateway \
-  --set credentials.secretName=ibkr-credentials
+# Install for paper trading
+helm upgrade --install ib-gateway ./charts/ib-gateway \
+  --set credentials.secretName=ibkr-credentials \
+  --set ibgateway.tradingMode=paper \
+  --set ibgateway.twsPort=4002
+
+# Install for live trading
+helm upgrade --install ib-gateway ./charts/ib-gateway \
+  --set credentials.secretName=ibkr-credentials \
+  --set ibgateway.tradingMode=live \
+  --set ibgateway.twsPort=4001
 ```
 
 ## Configuration
@@ -140,23 +151,6 @@ By default, this chart uses a custom `jts.ini` configuration (via `ibgateway.use
 
 The custom configuration is managed via a ConfigMap that is copied to `/root/Jts/jts.ini` before IB Gateway starts.
 
-#### Server Settings
-
-The following server settings are pre-configured:
-
-```ini
-[IBGateway]
-RemoteHostOrderRouting=ndc1.ibllc.com
-RemotePortOrderRouting=4001
-
-[Logon]
-SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
-
-[Communication]
-Peer=ndc1.ibllc.com:4001
-Region=usr
-```
-
 #### Verifying Server Configuration
 
 To verify the server configuration in a running pod:
@@ -172,17 +166,6 @@ RemoteHostOrderRouting=ndc1.ibllc.com
 SupportsSSL=ndc1.ibllc.com:4000,true,20260101,false
 Peer=ndc1.ibllc.com:4001
 ```
-
-#### Disabling Custom Configuration
-
-If you need to use the default server selection (not recommended for production):
-
-```yaml
-ibgateway:
-  useCustomConfig: false
-```
-
-When disabled, the IB Gateway will use its default server selection mechanism, which may result in connections to different IB servers (e.g., `cdc1.ibllc.com`).
 
 ## Usage
 
